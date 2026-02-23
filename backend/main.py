@@ -2,6 +2,7 @@ import os
 import logging
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel
 import uuid
 
@@ -77,7 +78,7 @@ async def import_data(req: ImportDataRequest):
     
     # Trigger Analyst Agent
     try:
-        docs = analyst_agent.import_requirements(req.query)
+        docs = await run_in_threadpool(analyst_agent.import_requirements, req.query)
         return {"status": "success", "imported_count": len(docs), "documents": docs}
     except Exception as e:
         logger.error(f"Import failed: {e}")
