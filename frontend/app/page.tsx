@@ -3,6 +3,7 @@
 import DashboardLayout from './components/DashboardLayout';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { api } from '../lib/api';
 
 export default function Home() {
   const router = useRouter();
@@ -15,18 +16,8 @@ export default function Home() {
     setLoading(true);
 
     try {
-      // In a real app, this would be a fetch call to the backend
-      // await fetch('http://localhost:8000/workspace', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ name: workspaceName, repo_url: repoUrl })
-      // });
-
-      // Simulate success for MVP without needing live backend
-      setTimeout(() => {
-        router.push('/notebook');
-      }, 1000);
-
+      await api.createWorkspace(workspaceName, repoUrl);
+      router.push('/notebook');
     } catch (error) {
       console.error('Failed to create workspace', error);
       alert('Failed to create workspace');

@@ -2,44 +2,43 @@
 
 import DashboardLayout from '../components/DashboardLayout';
 import { useState } from 'react';
+import { api } from '../../lib/api';
 
 export default function NotebookPage() {
-  const [documents, setDocuments] = useState([
-    {
-      title: 'Market Data Requirements',
-      source: 'Jira (TRD-101)',
-      summary: 'The Market Data Module is responsible for ingesting, parsing, and normalizing market data feeds...'
-    },
-    {
-      title: 'SMA Strategy Logic',
-      source: 'Confluence (TE-Strategy)',
-      summary: 'Implementation details for Simple Moving Average strategy, including window size and crossover logic...'
-    }
-  ]);
+  const [documents, setDocuments] = useState<any[]>([]); // To be populated by search/ingest
   const [loading, setLoading] = useState(false);
-  const [query, setQuery] = useState('');
-  const [messages, setMessages] = useState([
-    { role: 'user', content: 'What are the requirements for the Market Data module?' },
-    {
-      role: 'assistant',
-      content: 'The Market Data Module must ingest and normalize data feeds. Specifically: Implement `MarketDataProvider` interface, Support `get_price(symbol)` and `subscribe(symbol, callback)`, Must handle simulated `CSVFeed`, Must raise `SymbolNotFoundException` for invalid inputs.',
-      sources: ['Market Data Requirements']
-    }
-  ]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
+
+  const refreshDocs = async () => {
+    try {
+        const results = await api.searchDocs("requirements strategy");
+        setDocuments(results.map(r => ({
+            title: r.source.split('/').pop() || 'Document',
+            source: r.source,
+            summary: r.content.substring(0, 100) + '...'
+        })));
+    } catch (e) {
+        console.error("Search failed", e);
+    }
+  };
 
   const importData = async () => {
     setLoading(true);
-    // Simulate backend fetch
-    setTimeout(() => {
-      setDocuments([...documents, {
-        title: 'Account Module Requirements',
-        source: 'Jira (TRD-102)',
-        summary: 'Manages user accounts, balances, and positions. Must handle deposits, withdrawals, and updates.'
-      }]);
-      setLoading(false);
-    }, 1500);
+    try {
+        // Trigger ingestion
+        await api.importRequirements("default-workspace", "requirements");
+        // Refresh the list
+        await refreshDocs();
+    } catch (e) {
+        console.error("Import failed", e);
+        alert("Import failed. Check console.");
+    } finally {
+        setLoading(false);
+    }
   };
+
+  // Initial load? Maybe not needed for MVP as list starts empty
 
   const sendMessage = async () => {
     if (!currentMessage) return;
@@ -47,14 +46,17 @@ export default function NotebookPage() {
     setMessages(prev => [...prev, { role: 'user', content: msg }]);
     setCurrentMessage('');
 
-    // Simulate RAG response
-    setTimeout(() => {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Based on the knowledge base, I found relevant information regarding your query...',
-        sources: ['Market Data Requirements']
-      }]);
-    }, 1000);
+    try {
+        const response = await api.chatWithAgent(msg);
+        setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: response.response,
+            sources: []
+        }]);
+    } catch (e) {
+        console.error("Chat failed", e);
+        setMessages(prev => [...prev, { role: 'assistant', content: "Error communicating with agent." }]);
+    }
   };
 
   return (
@@ -64,6 +66,9 @@ export default function NotebookPage() {
         <div className="w-1/3 border-r border-gray-200 pr-6 overflow-y-auto">
           <h2 className="text-xl font-bold mb-4 text-gray-800">Knowledge Base</h2>
           <div className="space-y-4">
+            {documents.length === 0 && (
+                <p className="text-gray-500 text-sm italic">No documents found. Click import to fetch requirements.</p>
+            )}
             {documents.map((doc, idx) => (
               <div key={idx} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md cursor-pointer transition-shadow">
                 <h3 className="font-semibold text-hsbc-dark-gray">{doc.title}</h3>
