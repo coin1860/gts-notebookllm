@@ -1,3 +1,5 @@
+"use client";
+
 import DashboardLayout from '../components/DashboardLayout';
 import { useState, useRef, useEffect } from 'react';
 
@@ -31,7 +33,7 @@ export default function CodingPage() {
 
   const handleSend = async () => {
     if (!input.trim()) return;
-    
+
     const userMsg = input;
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setInput('');
@@ -39,7 +41,7 @@ export default function CodingPage() {
 
     // Update Plan Status
     if (userMsg.toLowerCase().includes('market data')) {
-      setTasks(prev => prev.map(t => 
+      setTasks(prev => prev.map(t =>
         t.title.includes('Market Data') ? { ...t, status: 'current' } : t
       ));
     }
@@ -67,19 +69,19 @@ export default function CodingPage() {
 
     setTimeout(() => {
       setTerminalOutput(prev => [...prev, 'All tests passed.']);
-      setTasks(prev => prev.map(t => 
+      setTasks(prev => prev.map(t =>
         t.title.includes('Market Data') ? { ...t, status: 'completed' } : t
       ));
-      
+
       const prUrl = 'https://github.com/hsbc/trading-engine/pull/new/feature/market-data';
       setPrLink(prUrl);
       setShowReviewModal(true);
-      
-      setMessages(prev => [...prev, { 
-        role: 'agent', 
-        content: `I have implemented the Market Data module. All tests are passing. I have created a Pull Request for you to review: ${prUrl}` 
+
+      setMessages(prev => [...prev, {
+        role: 'agent',
+        content: `I have implemented the Market Data module. All tests are passing. I have created a Pull Request for you to review: ${prUrl}`
       }]);
-      
+
       setIsProcessing(false);
     }, 7000);
   };
@@ -108,13 +110,13 @@ export default function CodingPage() {
                 </a>
               </div>
               <div className="flex justify-end space-x-3">
-                <button 
+                <button
                   onClick={() => setShowReviewModal(false)}
                   className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
                 >
                   Dismiss
                 </button>
-                <a 
+                <a
                   href={prLink}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -154,34 +156,34 @@ export default function CodingPage() {
 
           {/* Chat Interface */}
           <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col overflow-hidden">
-             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-                {messages.map((msg, idx) => (
-                  <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] p-3 rounded-lg text-sm ${msg.role === 'user' ? 'bg-hsbc-red text-white rounded-br-none' : 'bg-white border border-gray-200 text-gray-800 rounded-bl-none shadow-sm'}`}>
-                      {msg.content}
-                    </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+              {messages.map((msg, idx) => (
+                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] p-3 rounded-lg text-sm ${msg.role === 'user' ? 'bg-hsbc-red text-white rounded-br-none' : 'bg-white border border-gray-200 text-gray-800 rounded-bl-none shadow-sm'}`}>
+                    {msg.content}
                   </div>
-                ))}
-                {isProcessing && (
-                  <div className="flex justify-start">
-                    <div className="bg-white border border-gray-200 text-gray-500 p-3 rounded-lg rounded-bl-none shadow-sm text-sm italic">
-                      Thinking and coding...
-                    </div>
+                </div>
+              ))}
+              {isProcessing && (
+                <div className="flex justify-start">
+                  <div className="bg-white border border-gray-200 text-gray-500 p-3 rounded-lg rounded-bl-none shadow-sm text-sm italic">
+                    Thinking and coding...
                   </div>
-                )}
-                <div ref={messagesEndRef} />
-             </div>
-             <div className="p-3 bg-white border-t border-gray-200">
-                <input 
-                  type="text" 
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                  disabled={isProcessing}
-                  className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-hsbc-red focus:border-hsbc-red disabled:bg-gray-100" 
-                  placeholder="Type a command (e.g., 'Implement Market Data Module')..." 
-                />
-             </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+            <div className="p-3 bg-white border-t border-gray-200">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                disabled={isProcessing}
+                className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-hsbc-red focus:border-hsbc-red disabled:bg-gray-100"
+                placeholder="Type a command (e.g., 'Implement Market Data Module')..."
+              />
+            </div>
           </div>
         </div>
 
@@ -197,11 +199,10 @@ export default function CodingPage() {
           </div>
           <div className="flex-1 p-4 overflow-y-auto space-y-1 font-mono">
             {terminalOutput.map((line, idx) => (
-              <p key={idx} className={`${
-                line.includes('FAIL') || line.includes('Error') ? 'text-red-400' : 
-                line.includes('Agent') ? 'text-yellow-400' : 
-                line.startsWith('$') ? 'text-gray-500' : 'text-green-400'
-              }`}>
+              <p key={idx} className={`${line.includes('FAIL') || line.includes('Error') ? 'text-red-400' :
+                  line.includes('Agent') ? 'text-yellow-400' :
+                    line.startsWith('$') ? 'text-gray-500' : 'text-green-400'
+                }`}>
                 {line}
               </p>
             ))}

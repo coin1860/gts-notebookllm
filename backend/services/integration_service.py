@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Optional
-from backend.config import config
+from config import config
 # import requests # For real API calls if needed, though atlassian-python-api is preferred
 
 class IntegrationClient(ABC):

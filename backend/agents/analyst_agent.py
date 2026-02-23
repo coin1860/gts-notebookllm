@@ -1,6 +1,6 @@
 from typing import Dict, List
-from backend.services.integration_service import get_integration_client
-from backend.services.rag_service import rag_service
+from services.integration_service import get_integration_client
+from services.rag_service import rag_service
 
 class AnalystAgent:
     def __init__(self):

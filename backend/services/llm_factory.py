@@ -1,6 +1,6 @@
 from langchain_openai import ChatOpenAI
 from langchain_huggingface import HuggingFaceEmbeddings
-from backend.config import config
+from config import config
 
 def get_llm():
     """Returns a ChatOpenAI instance configured with environment variables."""

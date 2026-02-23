@@ -1,3 +1,5 @@
+"use client";
+
 import DashboardLayout from '../components/DashboardLayout';
 import { useState } from 'react';
 
@@ -18,8 +20,8 @@ export default function NotebookPage() {
   const [query, setQuery] = useState('');
   const [messages, setMessages] = useState([
     { role: 'user', content: 'What are the requirements for the Market Data module?' },
-    { 
-      role: 'assistant', 
+    {
+      role: 'assistant',
       content: 'The Market Data Module must ingest and normalize data feeds. Specifically: Implement `MarketDataProvider` interface, Support `get_price(symbol)` and `subscribe(symbol, callback)`, Must handle simulated `CSVFeed`, Must raise `SymbolNotFoundException` for invalid inputs.',
       sources: ['Market Data Requirements']
     }
@@ -44,7 +46,7 @@ export default function NotebookPage() {
     const msg = currentMessage;
     setMessages(prev => [...prev, { role: 'user', content: msg }]);
     setCurrentMessage('');
-    
+
     // Simulate RAG response
     setTimeout(() => {
       setMessages(prev => [...prev, {
@@ -70,7 +72,7 @@ export default function NotebookPage() {
               </div>
             ))}
           </div>
-          <button 
+          <button
             onClick={importData}
             disabled={loading}
             className="mt-4 w-full border border-gray-300 rounded py-2 text-gray-600 hover:bg-gray-50 flex items-center justify-center"
@@ -97,17 +99,17 @@ export default function NotebookPage() {
               ))}
             </div>
           </div>
-          
+
           <div className="relative">
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={currentMessage}
               onChange={(e) => setCurrentMessage(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-              placeholder="Ask a question about your documents..." 
+              placeholder="Ask a question about your documents..."
               className="w-full border border-gray-300 rounded-lg pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-hsbc-red focus:border-transparent"
             />
-            <button 
+            <button
               onClick={sendMessage}
               className="absolute right-3 top-3 text-hsbc-red hover:text-red-700"
             >

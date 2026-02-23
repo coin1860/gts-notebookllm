@@ -9,8 +9,8 @@ from langchain_core.documents import Document
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
-from backend.config import config
-from backend.services.llm_factory import get_llm, get_embeddings
+from config import config
+from services.llm_factory import get_llm, get_embeddings
 
 logger = logging.getLogger(__name__)
 

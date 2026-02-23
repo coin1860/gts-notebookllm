@@ -5,9 +5,9 @@ from typing import List, Dict, Optional
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
-from backend.services.rag_service import rag_service
-from backend.services.llm_factory import get_llm
-from backend.services.git_service import git_service
+from services.rag_service import rag_service
+from services.llm_factory import get_llm
+from services.git_service import git_service
 
 logger = logging.getLogger(__name__)
 

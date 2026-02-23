@@ -5,11 +5,11 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 import uuid
 
-from backend.config import config
-from backend.services.git_service import git_service
-from backend.services.rag_service import rag_service
-from backend.agents.analyst_agent import analyst_agent
-from backend.agents.coding_agent import coding_agent
+from config import config
+from services.git_service import git_service
+from services.rag_service import rag_service
+from agents.analyst_agent import analyst_agent
+from agents.coding_agent import coding_agent
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
