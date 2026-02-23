@@ -2,6 +2,7 @@
 
 import DashboardLayout from '../components/DashboardLayout';
 import { useState, useRef, useEffect } from 'react';
+import { api } from '../../lib/api';
 
 export default function CodingPage() {
   const [messages, setMessages] = useState([
@@ -39,51 +40,36 @@ export default function CodingPage() {
     setInput('');
     setIsProcessing(true);
 
-    // Update Plan Status
-    if (userMsg.toLowerCase().includes('market data')) {
-      setTasks(prev => prev.map(t =>
-        t.title.includes('Market Data') ? { ...t, status: 'current' } : t
-      ));
+    try {
+        const result = await api.executeTask(userMsg);
+
+        // Update logs
+        if (result.logs && Array.isArray(result.logs)) {
+            setTerminalOutput(result.logs);
+        } else if (result.logs) {
+             setTerminalOutput([result.logs]);
+        }
+
+        // Check for PR
+        if (result.pr_url) {
+            setPrLink(result.pr_url);
+            setShowReviewModal(true);
+        }
+
+        setMessages(prev => [...prev, {
+            role: 'agent',
+            content: result.message
+        }]);
+
+    } catch (e) {
+        setTerminalOutput(prev => [...prev, `Error: ${e}`]);
+        setMessages(prev => [...prev, {
+            role: 'agent',
+            content: "I encountered an error executing the task."
+        }]);
+    } finally {
+        setIsProcessing(false);
     }
-
-    // Simulate Agent Thinking & Execution
-    setTimeout(() => {
-      setTerminalOutput(prev => [...prev, '$ python3 -m unittest tests/test_market_data.py']);
-    }, 1000);
-
-    setTimeout(() => {
-      setTerminalOutput(prev => [...prev, 'Running tests...']);
-    }, 2000);
-
-    setTimeout(() => {
-      setTerminalOutput(prev => [...prev, 'test_get_price ... ok', 'test_subscribe ... FAIL', 'FAIL: test_subscribe']);
-    }, 3000);
-
-    setTimeout(() => {
-      setTerminalOutput(prev => [...prev, 'Agent: Analyzing failure... Attempting fix in src/market_data.py...']);
-    }, 4500);
-
-    setTimeout(() => {
-      setTerminalOutput(prev => [...prev, '$ git add src/market_data.py', '$ git commit -m "Fix subscription callback logic"']);
-    }, 6000);
-
-    setTimeout(() => {
-      setTerminalOutput(prev => [...prev, 'All tests passed.']);
-      setTasks(prev => prev.map(t =>
-        t.title.includes('Market Data') ? { ...t, status: 'completed' } : t
-      ));
-
-      const prUrl = 'https://github.com/hsbc/trading-engine/pull/new/feature/market-data';
-      setPrLink(prUrl);
-      setShowReviewModal(true);
-
-      setMessages(prev => [...prev, {
-        role: 'agent',
-        content: `I have implemented the Market Data module. All tests are passing. I have created a Pull Request for you to review: ${prUrl}`
-      }]);
-
-      setIsProcessing(false);
-    }, 7000);
   };
 
   return (

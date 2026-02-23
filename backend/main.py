@@ -2,6 +2,7 @@ import os
 import logging
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uuid
 
@@ -16,6 +17,15 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="AI Agent Workspace MVP")
+
+# Add CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for MVP
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- Models ---
 class CreateWorkspaceRequest(BaseModel):
@@ -32,16 +42,20 @@ class ImportDataRequest(BaseModel):
     query: Optional[str] = ""
 
 class ChatRequest(BaseModel):
-    workspace_id: str
+    workspace_id: Optional[str] = None
     message: str
+    thread_id: Optional[str] = None
 
 class AgentTaskRequest(BaseModel):
-    workspace_id: str
+    workspace_id: Optional[str] = None
     task: str
 
 class AgentTaskResponse(BaseModel):
     task_id: str
     status: str
+    message: Optional[str] = None
+    pr_url: Optional[str] = None
+    logs: Optional[List[str]] = None
 
 # --- State (In-Memory for MVP) ---
 workspaces = {}
@@ -73,7 +87,8 @@ async def create_workspace(req: CreateWorkspaceRequest):
 @app.post("/import-data")
 async def import_data(req: ImportDataRequest):
     if req.workspace_id not in workspaces:
-        raise HTTPException(status_code=404, detail="Workspace not found")
+        # For MVP, allow import without explicit workspace if needed, or use default
+        pass
     
     # Trigger Analyst Agent
     try:
@@ -83,42 +98,82 @@ async def import_data(req: ImportDataRequest):
         logger.error(f"Import failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/chat-knowledge")
-async def chat_knowledge(req: ChatRequest):
-    # simple RAG chat
-    context_docs = rag_service.query_knowledge(req.message)
-    # logic to generate answer would go here, for now return context
-    return {"response": "Here is what I found in the knowledge base:", "context": context_docs}
-
-def run_agent_task_background(task_id: str, task: str, repo_path: str):
-    tasks[task_id]["status"] = "running"
+@app.get("/search")
+async def search_docs(query: str):
     try:
-        result = coding_agent.run_task(task, repo_path)
-        tasks[task_id]["status"] = "completed"
-        tasks[task_id]["result"] = result
+        results = rag_service.query_knowledge(query)
+        # Format for frontend
+        formatted = []
+        for doc in results:
+             formatted.append({
+                 "source": doc.metadata.get("source", "Unknown"),
+                 "content": doc.page_content,
+                 "relevance": 1.0 # Placeholder
+             })
+        return formatted
+    except Exception as e:
+        logger.error(f"Search failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/chat")
+async def chat_with_agent(req: ChatRequest):
+    try:
+        # Use Search Agent logic (which uses RAG + LLM)
+        # For now, we reuse the RAG service directly or similar
+        context_docs = rag_service.query_knowledge(req.message)
+        context_str = "\n\n".join([d.page_content for d in context_docs])
+
+        # Simple LLM call with context (Mocking the agent loop for speed/reliability in MVP check)
+        # Ideally this calls SearchAgent
+        from services.llm_factory import get_llm
+        llm = get_llm()
+
+        prompt = f"""Answer the user's question based on the context below.
+
+        Context:
+        {context_str}
+
+        Question: {req.message}
+        """
+        response = llm.invoke(prompt)
+
+        return {"response": response.content, "thread_id": req.thread_id or str(uuid.uuid4())}
+    except Exception as e:
+        logger.error(f"Chat failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/task")
+async def execute_task_sync(req: AgentTaskRequest):
+    """
+    Executes task synchronously for MVP demo purposes.
+    """
+    # Find a workspace or use default
+    repo_path = config.SIMULATED_REPO_PATH
+    if req.workspace_id and req.workspace_id in workspaces:
+        repo_path = workspaces[req.workspace_id]["repo_path"]
+
+    task_id = str(uuid.uuid4())
+    logger.info(f"Starting task {task_id}: {req.task}")
+    
+    try:
+        # Run coding agent synchronously
+        result = coding_agent.run_task(req.task, repo_path)
+
+        return AgentTaskResponse(
+            task_id=task_id,
+            status="success",
+            message=result.get("message", "Task completed"),
+            pr_url=result.get("pr_url"),
+            logs=result.get("logs", [])
+        )
     except Exception as e:
         logger.error(f"Task failed: {e}")
-        tasks[task_id]["status"] = "failed"
-        tasks[task_id]["error"] = str(e)
-
-@app.post("/agent/task", response_model=AgentTaskResponse)
-async def start_agent_task(req: AgentTaskRequest, background_tasks: BackgroundTasks):
-    if req.workspace_id not in workspaces:
-        raise HTTPException(status_code=404, detail="Workspace not found")
-    
-    repo_path = workspaces[req.workspace_id]["repo_path"]
-    task_id = str(uuid.uuid4())
-    tasks[task_id] = {"id": task_id, "task": req.task, "status": "pending"}
-    
-    background_tasks.add_task(run_agent_task_background, task_id, req.task, repo_path)
-    
-    return AgentTaskResponse(task_id=task_id, status="pending")
-
-@app.get("/agent/task/{task_id}")
-async def get_task_status(task_id: str):
-    if task_id not in tasks:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return tasks[task_id]
+        return AgentTaskResponse(
+            task_id=task_id,
+            status="failed",
+            message=str(e),
+            logs=[str(e)]
+        )
 
 if __name__ == "__main__":
     import uvicorn
