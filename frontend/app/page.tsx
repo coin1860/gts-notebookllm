@@ -1,6 +1,38 @@
 import DashboardLayout from './components/DashboardLayout';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [workspaceName, setWorkspaceName] = useState('');
+  const [repoUrl, setRepoUrl] = useState('/app/simulated_repo_origin');
+
+  const createWorkspace = async () => {
+    if (!workspaceName) return;
+    setLoading(true);
+    
+    try {
+      // In a real app, this would be a fetch call to the backend
+      // await fetch('http://localhost:8000/workspace', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ name: workspaceName, repo_url: repoUrl })
+      // });
+      
+      // Simulate success for MVP without needing live backend
+      setTimeout(() => {
+        router.push('/notebook');
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Failed to create workspace', error);
+      alert('Failed to create workspace');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto space-y-8">
@@ -18,6 +50,8 @@ export default function Home() {
               </label>
               <input 
                 type="text" 
+                value={workspaceName}
+                onChange={(e) => setWorkspaceName(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-hsbc-red focus:border-hsbc-red"
                 placeholder="e.g., Trading Engine MVP" 
               />
@@ -28,16 +62,21 @@ export default function Home() {
               </label>
               <input 
                 type="text" 
+                value={repoUrl}
+                onChange={(e) => setRepoUrl(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-hsbc-red focus:border-hsbc-red"
                 placeholder="https://github.com/hsbc/trading-engine.git" 
-                defaultValue="/app/simulated_repo_origin"
               />
               <p className="text-xs text-gray-500 mt-1">
                 For this MVP, we are simulating a remote repository at <code>/app/simulated_repo_origin</code>.
               </p>
             </div>
-            <button className="bg-hsbc-dark-gray text-white px-6 py-2 rounded hover:bg-black transition-colors">
-              Verify & Connect
+            <button 
+              onClick={createWorkspace}
+              disabled={loading || !workspaceName}
+              className={`px-6 py-2 rounded text-white transition-colors ${loading || !workspaceName ? 'bg-gray-400' : 'bg-hsbc-dark-gray hover:bg-black'}`}
+            >
+              {loading ? 'Connecting...' : 'Verify & Connect'}
             </button>
           </div>
         </div>
@@ -74,8 +113,11 @@ export default function Home() {
                  <p className="text-gray-500">Drag and drop files here, or click to browse</p>
                </div>
             </div>
-             <button className="bg-hsbc-red text-white px-6 py-2 rounded hover:bg-red-700 transition-colors w-full">
-              Create Workspace
+             <button 
+              disabled={true}
+              className="bg-gray-300 text-white px-6 py-2 rounded w-full cursor-not-allowed"
+             >
+              Create Workspace (Connect Repo First)
             </button>
           </div>
         </div>
