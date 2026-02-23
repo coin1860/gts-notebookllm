@@ -74,6 +74,9 @@ class CodingAgent:
         
         # 2. Write Files
         for filepath, content in code_files.items():
+            if not self._is_safe_path(filepath, repo_path):
+                logger.error(f"Attempted to write to unsafe path: {filepath}")
+                continue
             full_path = os.path.join(repo_path, filepath)
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             with open(full_path, "w") as f:
@@ -152,17 +155,42 @@ class CodingAgent:
         
         # Overwrite files
         for filepath, content in new_files.items():
+            if not self._is_safe_path(filepath, repo_path):
+                logger.error(f"Attempted to write to unsafe path: {filepath}")
+                continue
             full_path = os.path.join(repo_path, filepath)
+            os.makedirs(os.path.dirname(full_path), exist_ok=True) # Ensure dir exists for new files in fix
             with open(full_path, "w") as f:
                 f.write(content)
                 
         # Retry test (optional, limited retries to avoid infinite loops)
         # For MVP, we just try to fix once.
 
+    def _is_safe_path(self, path: str, repo_path: str) -> bool:
+        """Checks if the path is safe (not absolute, doesn't start with -, stays within repo)."""
+        if path.startswith("-"):
+            return False
+
+        # Prevent absolute paths
+        if os.path.isabs(path):
+            return False
+
+        # Ensure it stays within repo_path using commonpath for security
+        abs_repo_path = os.path.abspath(repo_path)
+        abs_target_path = os.path.abspath(os.path.join(repo_path, path))
+
+        try:
+            return os.path.commonpath([abs_repo_path, abs_target_path]) == abs_repo_path
+        except ValueError:
+            return False
+
     def _run_test(self, test_file: str, repo_path: str) -> (bool, str):
         """Runs a specific test file using python -m unittest."""
         # Convert path to module format if needed, but simple file run works for standalone
         # Ideally: python -m unittest tests/test_foo.py
+        if not self._is_safe_path(test_file, repo_path):
+            return False, f"Invalid or unsafe test file path: {test_file}"
+
         try:
             # We run from repo root
             cmd = ["python3", "-m", "unittest", test_file]
